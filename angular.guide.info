@@ -1,0 +1,40 @@
+**** Init Develop Environment ****
+
+- Installare Node
+- Installare Angular Cli: npm install -g @angular/cli
+  >>	ng -v
+  >>	ng help
+
+- Creare un nuovo progetto Angular
+  >> ng new <nomeprogetto>
+
+- Compilare e Avviare l'app
+  >> ng serve
+  
+- Creare un componente
+  >> ng generate component <nomecomponente>
+  
+  
+  
+**** Direttive Angular [Data Binding] ****
+
+- Binding Variabile unidirezionale 
+  >> <input type="text" value={{ nome_variabile }} >
+
+- Binding Variabile bidirezionale 
+  E' necessario aggiungere ad @NgModule in app.module.ts l'import relativo a FormsModule
+  importato da @angular --> import { FormsModule } from '@agular/forms'
+  >> <input type="text" [(ngModel)]="nome_variabile"
+
+- Binding Function unidirection
+  >> <button (click)=nomeFunction()>Click</button>
+  
+  
+**** Direttive Angular [IF] ****
+- Binding visibilità elemento html con IF or NOT IF value
+  
+  -- Visualizza la variabile "message" (string) se la variabile "showMessage" (boolean) è true 
+  >> <div *ngIf="showMessage">{{messaggio}}</div>
+  
+  -- Visualizza la variabile "messaggioSuccess" (string) se la variabile "isError" (boolean) è false 
+  >> <div *ngIf="!isError">{{messaggioSuccess}}</div>
