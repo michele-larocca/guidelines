@@ -30,7 +30,7 @@
   >> <button (click)=nomeFunction()>Click</button>
   
   
-**** Direttive Angular [IF] ****
+**** Direttive Angular [IF, FOR] ****
 - Binding visibilità elemento html con IF or NOT IF value
   
   -- Visualizza la variabile "message" (string) se la variabile "showMessage" (boolean) è true 
@@ -38,3 +38,48 @@
   
   -- Visualizza la variabile "messaggioSuccess" (string) se la variabile "isError" (boolean) è false 
   >> <div *ngIf="!isError">{{messaggioSuccess}}</div>
+
+  -- Esegue il render di HTML dinamicamente tramite tramite il FOR di un array di oggetti 
+  >> <div *ngFor="let item of items">
+  >>    <div>{{item.description}}</div>
+  >> </div>
+
+**** Navigation by Routing ****
+- Aggiungere le associazioni tra url e Componente in app-routing.module.ts
+  >> const routes: Routes = [
+  >>  {path: '', component: LoginComponent},
+  >>  {path: 'login', component: LoginComponent},
+  >>  {path: '**', component: PageNotFoundComponent}
+  >> ];
+  
+- Includere in app.component.html il tag <router-outlet></router-outlet>
+  >> <router-outlet></router-outlet>
+  
+- Per attivare la navigazione tra componenti è necesario usare la code injection del Router nel costruttore del componente
+  >> constructor(private route: Router) { }
+  
+  -- successivamente utilizzare il field route per indirizzare la navigazione
+  >> this.route.navigate(['welcome']);
+  
+- Per passare dei parametri tramite il Router è necessario modificare l'associazione specificando il valore da usare  
+  >> const routes: Routes = [
+  >>  {path: 'welcome/:userId', component: Welcome}
+  >> ];
+  
+  -- Indirizzare la navigazione verso il componente Welcome passando il parametro userId
+  >> this.route.navigate(['welcome', this.userId]);
+  
+  -- Indirizzare la navigazione verso il componente Welcome passando il parametro userId
+  >> this.route.navigate(['welcome', this.userId]);
+  
+  -- E' necesario eseguire la code injection del Router nel costruttore del componente su cui si vuole prelevare il parameter
+  >> constructor(private route: ActivatedRouter) { }
+  
+  -- Recuperare tramite il Router il paramtro inserito tramite navigation by Component o dal Browser
+  >> this.userId = this.route.snapshot.params['userId'];
+  
+- Aggiungere la navigazione nel componente HTML tramite il routerLink
+  >> Clicca <a routerLink="/articoli">qui</a> per vedere gli articoli
+  
+  
+  
