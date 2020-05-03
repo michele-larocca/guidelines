@@ -1,0 +1,24 @@
+- GetVersion
+>> docker -v
+
+- Get Login
+>> docker login
+
+- run o install (if not localy present)
+>> docker run <nome-container>.
+
+
+
+- Creare dei container da un file docker-compose.yml
+>> docker-compose up -d
+
+
+
+
+**** Docker is in conflict with VMWare and others VM Tools ****
+
+- To disable Hyper-V from starting the following command can be used:
+>> bcdedit /set hypervisorlaunchtype off
+
+- To enable the Hyper-V role again use the following command
+>> bcdedit /set hypervisorlaunchtype auto

@@ -1,0 +1,24 @@
+- Inizializza una directory con un nuovo repository locale
+>> git init
+
+- Aggiunge i file alla zona di stages preparandoli per il commit.
+>> git add .
+
+- Esegue il commit dei file presenti nella zona di stages nel repository locale
+>> git commit -m "First commit"
+
+- Sincronizza il repository locale con un repo remoto (REMOTE_REPOSITORY_URL)
+>> git remote add origin <REMOTE_REPOSITORY_URL>
+
+- Verifica con quale repository remoto è attualmente sincronizzato il repository locale
+>> git remote -v
+
+- Effettua il push (la sincronizzazione) dei commit effettuati nel repo locale su repo remoto
+>> git push origin master
+
+- Visualizza la lista di Branche che possono essere cancellati
+>> git remote prune origin --dry-run
+
+- Elimina localmente i branch che non esistono più nel server Git
+>> git remote prune origin
+

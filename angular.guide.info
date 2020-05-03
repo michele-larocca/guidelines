@@ -29,6 +29,16 @@
 - Binding Function unidirection
   >> <button (click)=nomeFunction()>Click</button>
   
+- Binding Variabile tra componenti
+  Dichiarare le variabile all'interno della classe del componente (file .ts)
+  con annotation @Input della linb @angular/core
+  >> import { Component, OnInit, Input } from '@angular/core';
+  >> export class CustomComponent implements OnInit {
+  >> @Input() Titolo: string
+  
+  -- E' possibile utilizzare il componente CustomComponent
+  >> <CustomComponent [Titolo]="'Titolo da settare nel componente'"></CustomComponent>
+  
   
 **** Direttive Angular [IF, FOR] ****
 - Binding visibilità elemento html con IF or NOT IF value
@@ -69,9 +79,6 @@
   -- Indirizzare la navigazione verso il componente Welcome passando il parametro userId
   >> this.route.navigate(['welcome', this.userId]);
   
-  -- Indirizzare la navigazione verso il componente Welcome passando il parametro userId
-  >> this.route.navigate(['welcome', this.userId]);
-  
   -- E' necesario eseguire la code injection del Router nel costruttore del componente su cui si vuole prelevare il parameter
   >> constructor(private route: ActivatedRouter) { }
   
@@ -80,6 +87,57 @@
   
 - Aggiungere la navigazione nel componente HTML tramite il routerLink
   >> Clicca <a routerLink="/articoli">qui</a> per vedere gli articoli
+    
+  
+**** Chiamate HTTP ****
+
+- Per poter invocare un servizio Rest bisogna usare il modulo HttpClientModule
+  
+  -- Importare nel file app.module.ts il modulo HttpClientModule
+  -- ed includerlo nell'array degli import del @NgModule
+  >> import { HttpClientModule } from '@angular/common/http';
+  
+  -- Effettuare la Code Injection nel contruttore, su cui si vuole invocare il servizio Rest, della classe HttpClietn di @angular/common/http
+  >> import { HttpClient } from '@angular/common/http';
+  >> ..
+  >> constructor(private httpClient: HttpClient) { }
+  
+  -- Invocare il metodo get/post/put/delete etc. per effettuare la chiamata
+  -- Il metodo ritorna un Observable su cui potersi registrare nei casi di success o error
+  >> this.httpClient.get('http://www.mocky.io/v2/5ea6b704320000095bac2cae')
+  >> 
+
+
+
+**** Servicies ****
+  
+- Creare un service con "ng generate service <nome_servizio>"
+ Verrà creato un servizio, ovvero una classe @Injectable su cui aggiungere la logica necessaria
+ 
+ -- implementare i metodi con la business logic necessaria
+ Tali metodi potranno essere invocati nei vari componenti (Moduli)
+  >> import { Injectable } from '@angular/core';
+  >> 
+  >> @Injectable({
+  >>   providedIn: 'root'
+  >> })
+  >> export class AuthAppService {
+ 
+ -- Per invocare un Service bisogna effettuare una code injection del servizio (della classe relativa) direttamente
+ nel construttore del componenti su cui si vuole utilizzare
+ >> constructor(private basicAuth: AuthAppService)
+ 
+ 
+- Proteggere la navigazione tramite rooterLink con CanActivate
+  Creare un service che implemtna l' interfaccia CanActivate di @angular/router ed implementando
+  il metodo canActivate.
+  >> export class RouteGuardService implements CanActivate {
+  
+  -- Proteggere le rotte interessate aggiungendo il canActivate
+  >> const routes: Routes = [
+  >>  {path: 'welcome/:userId', component: Welcome, canActivate: [RouteGuardService] }
+  >> ]
+
   
   
   
