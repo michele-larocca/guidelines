@@ -22,3 +22,9 @@
 - Elimina localmente i branch che non esistono più nel server Git
 >> git remote prune origin
 
+- Visualizza tutti i Branch, con -a visualizza anche quelli remoti
+>> git branch -a
+
+- Rimuovere il branch locale, con -D (Maiuscolo) si effettua il force delete without warning
+>> git branch -d <name_local_branch>
+
