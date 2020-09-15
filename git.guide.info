@@ -28,3 +28,5 @@
 - Rimuovere il branch locale, con -D (Maiuscolo) si effettua il force delete without warning
 >> git branch -d <name_local_branch>
 
+- Rimuove la verifica SSL (Caso di errori di check verificato scaduto durante il clone)
+>> git config --global http.sslVerify false
