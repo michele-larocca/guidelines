@@ -7,13 +7,19 @@
 - run o install (if not localy present)
 >> docker run <nome-container>.
 
-
+- run with a port opened adn redirect from 9000 to 4242
+>> docker run -p 4242:9000 <nome-container>.
 
 - Creare dei container da un file docker-compose.yml
 >> docker-compose up -d
 
+- Creare dei container da un file docker-compose-consul.yml, -d sta per detach
+>> docker-compose -f "docker-compose-consul.yml" up -d --build
 
+- Effettuare un build di una immagine a partire dalla position . con il nome example
+>> docker build . -t example
 
+>> DOCKER_BUILDKIT=1 docker build . -t spring-microservice
 
 **** Docker is in conflict with VMWare and others VM Tools ****
 
