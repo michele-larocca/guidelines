@@ -44,5 +44,5 @@ bin/kafka-producer-perf-test.sh --topic my-topic \
 key.serializer=org.apache.kafka.common.serialization.StringSerializer \
 value.serializer=org.apache.kafka.common.serialization.StringSerializer
 
-# Kafka memorizza gli offset dei consumer nel topic __consumer_offsets
+# Kafka memorizza gli offset dei consumer nel topic __consumer_offsets (con 50 partition)  
 bin/kafka-topics.sh --zookeeper localhost:2181 --describe --topic __consumer_offsets
