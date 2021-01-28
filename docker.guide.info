@@ -1,30 +1,86 @@
-- GetVersion
+**** Docker command ****
+
+# GetVersion
 >> docker -v
 
-- Get Login
+# Get Login
 >> docker login
 
-- run o install (if not localy present)
+# run o install (if not localy present)
 >> docker run <nome-container>.
 
-- run with a port opened adn redirect from 9000 to 4242
+# run with a port opened adn redirect from 9000 to 4242
 >> docker run -p 4242:9000 <nome-container>.
 
-- Creare dei container da un file docker-compose.yml
+# Vedere le info di Dettaglio del container (come ad esempio i volumi in Mounts Key) 
+>> docker inspect <container-id-or-name>
+
+#vedere la lista di immagini
+>> docker images
+
+#vedere la lista di container
+>> docker ps -a
+
+# Eliminare un container
+>> docker rm <container-id-or-name>
+
+# Eliminare un immagine
+>> docker rmi <image-id-or-name>
+
+# Montare un Volume 
+# -v  		-> Create a Volume
+# $(pwd) 	-> Host Location, If not passed to Docker It uses a default: /mnt/.../var/lib/docker/volumens/${ID_CONTAINER}/_data
+# /var/www	-> Container Volume
+>> docker run -p 8080:3000 - v $(pwd):/var/www node
+
+# Eliminare un container ed il suo volume (Sconsigliato)
+>> docker rm -v <container-id-or-name>
+
+# Spostarsi in una determinata directory sul container
+# -w 		-> specifica la directory su cui posizionarsi dentro il container
+# -it		-> Effettua un lik in modo interattivo tra il terminale ed il container, in modo da  poterlo navigare dopo averlo eseguito.
+# dopo il nome del container si può aggiungere dei comandi da eseguire una volta entrati nel container come in questo caso: npm install
+>> docker run -it -p 8080:3000 -v ${pwd):/var/www -w "/var/www" node npm install
+
+# Publishing an Image to Docker Hub
+>> docker push <image-name> 
+
+
+**** Key Dockerfile Instructions ****
+
+FROM			-> Immagine BASE da cui si vuole Partire per creare un altra immagine
+LABEL			-> Una LABEL su cui si possono inserire info aggiuntive (ES: author, etc..)
+RUN				-> Comando da esuguire sulla shell (ES: npm install)
+COPY			-> Comando di copia di un dir locale a quello di destinazione dell'immagine che si sta definendo
+					E' possibile copiare il contenuto di una image all'immagine (FROM) che si sta creando (ES: COPY --from=publich /app .)
+ENTRYPOINT		-> Array con i parametri di entripoint (ES: ["node", "server.js"])
+WORDIR			-> Set una directory come work dir di partenza per il comando RUN
+EXPOSE			-> Porta esposta dal Container (ES: 8080)
+ENV				-> Environment usato dal container  (ES: ENV NODE_ENV=production)
+VOLUME			-> Volumi usati dal container (ES: ["/var/www"]
+
+
+# Effettuare un build di una immagine di un Dockerfile a partire dalla position . con il nome example
+# se il nome del docker file è diverso dal defualt (Dockerfile) bisogna specificarlo con -f node.dockerfile
+>> docker build -t example -f Dockerfile .
+>> DOCKER_BUILDKIT=1 docker build . -t spring-microservice
+
+
+
+**** Docker Compose command ****
+
+# Creare dei container da un file docker-compose.yml
 >> docker-compose up -d
 
-- Creare dei container da un file docker-compose-consul.yml, -d sta per detach
+# Creare dei container da un file docker-compose-consul.yml, -d sta per detach
 >> docker-compose -f "docker-compose-consul.yml" up -d --build
 
-- Effettuare un build di una immagine a partire dalla position . con il nome example
->> docker build . -t example
 
->> DOCKER_BUILDKIT=1 docker build . -t spring-microservice
 
 **** Docker is in conflict with VMWare and others VM Tools ****
 
-- To disable Hyper-V from starting the following command can be used:
+# To disable Hyper-V from starting the following command can be used:
 >> bcdedit /set hypervisorlaunchtype off
 
-- To enable the Hyper-V role again use the following command
+# To enable the Hyper-V role again use the following command
 >> bcdedit /set hypervisorlaunchtype auto
