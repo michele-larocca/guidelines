@@ -5,6 +5,7 @@
 
 # Get Login
 >> docker login
+>> docker login --username=<user-name>
 
 # run o install (if not localy present)
 >> docker run <nome-container>.
@@ -14,6 +15,9 @@
 
 # Vedere le info di Dettaglio del container (come ad esempio i volumi in Mounts Key) 
 >> docker inspect <container-id-or-name>
+
+# Vedere i log di esecuzione del container 
+>> docker logs <container-id-or-name>
 
 #vedere la lista di immagini
 >> docker images
@@ -36,14 +40,44 @@
 # Eliminare un container ed il suo volume (Sconsigliato)
 >> docker rm -v <container-id-or-name>
 
+# Eliminare tutti i container esistenti
+>> docker rm -f $(docker ps -a -q)
+
+# Fermare il run di un container
+>> docker stop <name-or-id-container>
+
+# Far partire il run di un container gia esistente
+>> docker start <name-or-id-container>
+
 # Spostarsi in una determinata directory sul container
 # -w 		-> specifica la directory su cui posizionarsi dentro il container
 # -it		-> Effettua un lik in modo interattivo tra il terminale ed il container, in modo da  poterlo navigare dopo averlo eseguito.
 # dopo il nome del container si può aggiungere dei comandi da eseguire una volta entrati nel container come in questo caso: npm install
->> docker run -it -p 8080:3000 -v ${pwd):/var/www -w "/var/www" node npm install
+>> docker run -it -p 8080:3000 -v $(pwd):/var/www -w "/var/www" node npm install
 
-# Publishing an Image to Docker Hub
->> docker push <image-name> 
+# Eseguire un comando (ES: npm install) dentro un container con EXEC
+>> docker exec <id-container> npm install
+
+
+**** Link Tra container Container ****
+
+# dare un alias (name) al container
+>> docker run -d --name my-postgre postgres
+
+# linkare un container tramite il comando --link con name-container:alias-used-in-this-container
+>> docker run -d -p 5000:500 --link my-postgres:postgreslink aspnetcore
+
+# creare una sottorete, una network isolata
+>> docker network create --driver bridge <nome-network>
+
+# Eseguire un container in una Network specifica
+>> docker run -d --net=<nome-network> --name <nome-container> <nome-image>
+
+# Visualizzare la lista di Network
+>> docker network ls
+
+# Ispezionare dettagli di una network
+>> docker network inspect <nome-network>
 
 
 **** Key Dockerfile Instructions ****
@@ -53,6 +87,7 @@ LABEL			-> Una LABEL su cui si possono inserire info aggiuntive (ES: author, etc
 RUN				-> Comando da esuguire sulla shell (ES: npm install)
 COPY			-> Comando di copia di un dir locale a quello di destinazione dell'immagine che si sta definendo
 					E' possibile copiare il contenuto di una image all'immagine (FROM) che si sta creando (ES: COPY --from=publich /app .)
+ADD				--> Come il copy con funzionalità incluse tipo zip/unzip/download resources da internet, etc..
 ENTRYPOINT		-> Array con i parametri di entripoint (ES: ["node", "server.js"])
 WORDIR			-> Set una directory come work dir di partenza per il comando RUN
 EXPOSE			-> Porta esposta dal Container (ES: 8080)
@@ -60,24 +95,125 @@ ENV				-> Environment usato dal container  (ES: ENV NODE_ENV=production)
 VOLUME			-> Volumi usati dal container (ES: ["/var/www"]
 
 
-# Effettuare un build di una immagine di un Dockerfile a partire dalla position . con il nome example
+# Effettuare un build di una immagine con nome "my-image" partendo da un Dockerfile ricercato nella directory corrente "."
 # se il nome del docker file è diverso dal defualt (Dockerfile) bisogna specificarlo con -f node.dockerfile
->> docker build -t example -f Dockerfile .
+# E' possibile durante il build disabilitare la cache con l'opzione "--no-cache=true"
+>> docker build -t my-image -f Dockerfile .
 >> DOCKER_BUILDKIT=1 docker build . -t spring-microservice
 
+# Creare un'immagine a partire da un container modificato (BY COMMIT)
+>> docker commit <id-or-name-container> <new-images-name:tag-version>
+
+# Creare un'immagine a partire da un altra immagine cambiando il nome di destinazione (TAG)
+>> docker tag <id-or-name-image> <new-images-name:tag-version>
+
+# Publishing an Image to Docker Hub, dopo aver fatto un docker login.
+>> docker push <image-name> 
 
 
-**** Docker Compose command ****
+# ********************************
+# **** Docker Compose command ****
+# ********************************
 
-# Creare dei container da un file docker-compose.yml
+# Key used to compile a docker-compose.yml
+ - version
+ - services
+	- build
+		- context
+		- dockerfile
+	- environment
+	- image
+	- networks
+	- ports
+	- volumes
+
+# ESEMPIO di docker-compose.yml
+	version: "3.x"
+	services:
+		node:
+			build:
+				context: .
+				dockerfile: node.dockerfile
+			networks:
+				-nodeapp-network
+		mongodb:
+			image: mongodb
+			networks:
+				-nodeapp-network
+		networks:
+			nodeapp-network
+				driver: bridge
+	
+# Build o Rebuild services defined in docker-compose.yml
+>> docker-compose build
+>> docker-compose build <single-service-name>
+
+# Eseguire il Run dei container da un file docker-compose.yml (senza fare il build se le immagini esistono)
 >> docker-compose up -d
+
+# Eseguire il Run dei container eseguendo il rebuild di una sola image (node) senza ricreare i servizi che dipendono dall'immagine (node)
+>> docker-compose up -d --no-deps node
+
+# Stop e Remove Container
+>> docker-compose down
+
+# Stop e Remove Container e remove image and volume
+>> docker-compose down --rmi all --volumes
+
+# Effettua lo stop di tutti i container senza rimuoverli
+>> docker-compose stop
+
+# Rimuovere i container gestiti da docker-compose
+>> docker-compose rm
 
 # Creare dei container da un file docker-compose-consul.yml, -d sta per detach
 >> docker-compose -f "docker-compose-consul.yml" up -d --build
 
+# Visualizzare la lista dei container gestiti da docker compose
+>> docker-compose ps
+
+# Visualizzare i log (com -f si va in tail con append continuo dei log)
+# E' inoltre possibile specificare un container-specifico per visualizzare solo i suoi log.
+>> docker-compose logs -f 
+>> docker-compose logs -f <id-container>
 
 
-**** Docker is in conflict with VMWare and others VM Tools ****
+
+# ********************************
+# ********* Docker Swarm *********
+# ********************************
+# Serve per gestire ed orchestrare i container su più nodi.
+
+
+
+# ********************************
+# ********* Docker Stack *********
+# ********************************
+
+# Server per utilizzare insieme le funzionalità di 
+# - Docker Swarm, per l'orchestrazione su piu nodi, 
+# - Docker compose, per gestire tramite un unico run di più container.
+
+# Eseguire lo STACK tramite il file docker-compose.yml
+>> docker stack deploy --compose-file=docker-compose.yml <nome_stack>
+
+# Verificare lo stato dello stack
+>> docker stack ls
+
+# Visualizzare i dettaglio dello stack
+>> docker stack services <nome_servizio>
+
+# Visualizzare i container in esec relativi allo stack
+>> docker stack ps <nome_stack>
+
+# Rimuovere lo stack
+>> docker stack rm <nome_stack>
+
+
+
+# *************************************************************
+# *** Docker is in conflict with VMWare and others VM Tools ***
+# *************************************************************
 
 # To disable Hyper-V from starting the following command can be used:
 >> bcdedit /set hypervisorlaunchtype off
