@@ -4,13 +4,19 @@ Guideline based on kafka version 2.7.0 - 21/01/2021
 # Start Zookeeper Server with default config (config/zookeeper.properties, default port 2181)
 bin/zookeeper-server-start.sh config/zookeeper.properties
 
-# Start Broker Server with default config (config/zookeeper.properties, default port 9092)
-bin/zookeeper-server-start.sh config/zookeeper.properties
+# Start Broker Server with default config (config/server.properties, default port 9092)
+bin/kafka-server-start.sh config/server.properties
 
-# Create a Topic
+# Create a Topic by zookeeper
 bin/kafka-topics.sh \
 --create --topic my-topic \
 --zookeeper localhost:2181 \
+--replication-factor 1 --partitions 1
+
+# Create a Topic by bootstrap-server
+bin/kafka-topics.sh \
+--create --topic my-topic1 \
+--bootstrap-server localhost:9092 \
 --replication-factor 1 --partitions 1
 
 # Eliminare un Topic
@@ -21,8 +27,9 @@ bin/kafka-topics.sh \
 # Modificare un Topic
 bin/kafka-topics.sh \
 --alter --topic my-topic \
---zookeeper localhost:2181 \
+--zookeeper localhost:2181 \bin/zookeeper-server-start.sh config/zookeeper.properties
 --replication-factor 1 --partitions 4
+
 
 # Vedere la lista di Topic attivi
 bin/kafka-topics.sh \
@@ -32,10 +39,12 @@ bin/kafka-topics.sh \
 bin/kafka-topics.sh --zookeeper localhost:2181 --describe --topic my-topic
 
 # Creare un producer (che punta al broker:9092)
-bin/kafka-console-producer.sh --broker-list localhost:9092 --topic my-topic
- 
+bin/kafka-console-producer.sh --topic my-topic --broker-list localhost:9092 
+bin/kafka-console-producer.sh --topic my-topic --bootstrap-server localhost:9092
+
 # Creare un consumer (che punta al broker:9092)
-bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+bin/kafka-console-consumer.sh --topic my-topic --from-beginning --bootstrap-server localhost:9092
+
 
 # Test di Performance Producer (Simula sent message di un producer)
 bin/kafka-producer-perf-test.sh --topic my-topic \
