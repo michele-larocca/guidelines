@@ -1,0 +1,373 @@
+Key Kubernetes Features
+- Service Discovery / Load Balancing
+- Storage Orchestration
+- Automate Rollouts / Rollbacks
+- Self-Healing
+- Secret and Configuration Management
+- Horizontal Scaling
+
+
+# *************************************
+# ***** Comandi Generali di k8s *******
+# *************************************
+
+# Visualizzare la lista di nodi o info sul cluster Node
+>> kubectl get nodes
+>> kubectl cluster-info
+
+# Inserire una label ad un nodo (stesso discorso vale per altri oggetti: pod, deployment, service, etc..)
+>> kubectl label node [node-name] [label-key]=[label-value]
+
+# Running a Pod it is possibile by imperative mode by "kubectl run" command
+# or by declarative mode with a YAML file "kubectl create/apply" command
+
+# Create and Run the nginx:alpine container in a Pod
+>> kubectl run [name-of-pod] --image=nginx:alpine --port=5000
+
+# List only pods/deployments
+>> kubectl get pods
+>> kubectl get pods -o wide
+>> kubectl get pods -o yaml | grep podIP:
+>> kubectl get deployments
+
+# List all resources
+>> kubectl get all
+
+# ******************************************
+# ******** Create / Delete command *********
+# ******************************************
+
+# Create a pod using the data in [manifest-file.json]
+>> kubectl create -f ./[manifest-file.json]
+
+# Create a pod based on the JSON passed into stdin
+>> cat [manifest-file.json] | kubectl create -f -
+
+# Edit the data in [manifest-file.yml] in JSON then create the resource using the edited data
+>> kubectl create -f [manifest-file.yml] --edit -o json
+
+# create a pod/deployment with no validate, no error if yaml is wrong (default true)
+# --save-confi -> the configuration of current object will be saved in its annotation.
+>> kubectl create -f file.pod-or-deployment-or-service.yml --save-config --dry-run --validate=false
+
+# Delete Pod/Deployment/Service
+>> kubectl delete -f file.pod-or-deployments-or-service.yml
+>> kubectl delete pod [pod-name]
+>> kubectl delete deployment [deployment-name]
+>> kubectl delete Service [Service-name]
+
+
+# *******************************************************
+# ******** Apply / Replace / Edit / Diff command ********
+# *******************************************************
+
+# Create or modify pod/deployment/Service (Non error if exit, it goes in editing mode)
+>> kubectl apply -f file.pod-or-deployment-or-service.yml
+
+# You can first diff to see what changes are going to be made, and then apply
+>> kubectl diff -f [manifest-file.yml]
+>> kubectl apply -f [manifest-file.yml]
+
+# Replace the resouce by manifest file and replace kubectl.kubernetes.io/last-applied-configuration
+# Updating objects with the replace command drops all parts of the spec not specified in the configuration file.
+>> kubectl replace -f [manifest-file.yml] --save-config
+
+# Edit Pod configuration
+# EDIT: Directly edit the raw configuration of a live object by opening its configuration in an editor
+# PATCH: Directly modify specific fields of a live object by using a patch string
+>> kubectl edit -f nginx.pod-or-deployment.yml
+>> kubectl patch
+
+
+# ************************************************
+# ******** Exec / Describe / Get command *********
+# ************************************************
+
+# Descrive information if Pod/deployment and event of container adn image
+>> kubectl describe pod [pod-name]
+>> kubectl get pod my-nginx -o json
+
+# Describe deployment with all labels or by one label
+>> kubectl get deployment --show-labels my-nginx -o json
+>> kubectl get deployment -l app=nginx my-nginx -o json
+
+# Exec into POD / container
+# Add -c [containerID} in case where multiple containers are running in the pod
+>> kubectl exec [pod-name] -it sh
+
+# Test connect between two Pod inside the cluster by podID (get podID by describe o get command)
+>> kubectl exec [pod-name] -it sh
+>> apk add curl
+>> curl -s http://[podID]
+
+>> kubectl exec [pod-name] -- curl -s http://podIP
+>> kubectl exec[pod-name] -- printenv | grep SERVICE
+
+
+# **********************************************************
+# ******** Portforward / autoscale / Scale command *********
+# **********************************************************
+
+# Scale the Deployment Pods to 5
+>> kubectl scale deployment [deployment-name] --replicas=5
+>> kubectl scale -f nginx.deployment.yml --replicas=5
+
+# Scale the Deployment by pre-condition to current scale (only if currrent is 4)
+>> kubectl scale --current-replicas=4 --replicas=5 -f nginx.deployment.yml 
+
+# Effettuare l'auto scale in funzione delle risorse
+>> kubectl autoscale deployment [deployment-name] 
+	--cpu-percent=50 --min=1 --max=5
+
+# Enable Pod/deployments/service to be called ecternally
+# Service or Deployment or Pods are only accessible within the kubernetes cluster by default
+>> kubectl port-forward pod/[pod-name] 8080:80 
+>> kubectl port-forward deployment/[deployment-name] 8080:80 
+>> kubectl port-forward service/[service-name] 8080:80 
+ 
+ 
+# *****************************************
+# **** Deploy Command - Rollout / Set *****
+# *****************************************
+# E' possibile specificare 
+# .spec.revisionHistoryLimit --> history Limit Number
+# .spec.progressDeadlineSeconds --> dedline in sec per definire se il Pod is reday o failed
+
+# Visualizzare i deployment di system Kubernetes
+>> kubectl get deployments --namespace=kube-system
+
+# Alterare l'immagine usata da un container presente nel deployment
+>> kubectl set image [deployment-name] [container-name]=[NEW-image-name]:[NEW-image-version]
+>> kubectl set resources [deployment-name] -c=[container-name] --limits=cpu=200m,memory=512Mi
+
+# Visualizzare lo stato del rollout in corso di un Deployment 
+# Ad Esempio: a seguito di un cambio del template
+>> kubectl rollout status deployment [deployment-name]
+
+# Visualizzare l'History (revisioni) dei deploymnet
+>> kubectl rollout history [deployment-name]
+
+# Visualizzare il dettaglio di una revisione del deployment
+>> kubectl rollout history [deployment-name] --revision=4
+
+# REffettuare il rollback alla precedente versione o ad una specifica versione (--to-revision)
+>> kubectl rollout undo [deployment-name] 
+>> kubectl rollout undo [deployment-name] --to-revision=2
+
+# Mettere in pausa il Rollout 
+# Ad Esempio: Per effettuare modifiche multiple e non triggerare il rollout
+>> kubectl rollout pause [deployment-name]
+
+# Riattivare il Rollout ed osservare i cambiamenti
+>> kubectl rollout resume [deployment-name]
+
+
+# *************************
+# ***** Service Types *****
+# *************************
+- ClusterIp - Expose the service on a cluster-internal IP (default)
+- NodePort - Expose the service on each Node's IP at a static port
+- LoadBalancer - Provision an external IP to act as a load balancer for the service
+- ExternalName - Map a service to a DNS name
+
+# Creare un service oltre che da manifest anche da command kubectl
+>> kubectl expose deployment [deployment-name] 
+	--type=[NodePort | LoadBalancer | etc..]
+	--port=[external-port] --target-port=[container-port]
+	--name=[name-service]
+
+
+# *************************
+# ***** Volumes Types *****
+# *************************
+
+- emptyDir - Empty directory for storing "transient" data 
+			useful for sharing files between containers running in a Pod 
+			(shared a Pod's lifetime)
+- hostPath - Pod mounts into the node's filesystem
+- nfs - Network File System share mounted into Pod.
+- configMap/secret - Special types of volumes that provide a Pod with acess to kubernetes resources
+- PersistentVolumeClaims -> PersistentVolumes -> Storage (Cloud)
+- StorageClasses
+
+
+# *************************
+# ***** ConfigMap *********
+# *************************
+
+# Create a ConfigMap using data from a config file
+>> kubectl create configmap [cm-name] --from-file=[path-to-file]
+
+# Create a ConfigMap from a env file
+>> kubectl create configmap [cm-name] --from-env-file=[path-to-file]
+
+# Create a ConfigMap from individual data values
+>> kubectl create configmap [cm-name] 
+	--from-literal=apiUrl=https://my-api
+	--from-literal=otherKey=otherValue
+	
+# Create a ConfigMap from a manifest
+>> kubectl create -f file.configmap.yml
+
+
+# *************************
+# ***** Secret ************
+# *************************
+
+# Create a secret and store securely in kubernetes
+>> kubectl create secret generic my-secret
+	--from-literal=pwd=my-
+
+# Create a secret from a file 
+>> kubectl create secret generic my-secret
+	--from-file=ssh-privatekey=~/.ssh/id_rsa
+	--from-fiel=ssh-publickey=~/.ssh/id_rsa.pub
+
+# Create a secret from a key pair 
+>> kubectl create secret tls tls-secret 
+	--cert=path/to/tls.cert
+	--key=path/to/tls.key
+	
+# Get secrets
+>> kubectl get secrets
+
+# Get YAML for specific secret
+>> kubectl get secret [secret-name] -o yaml
+
+
+# *************************
+# **** Troubleshooting ****
+# *************************
+
+# View the log for a Pod's container
+>> kubectl logs [pod-name]
+
+# View the logs for a specific container within a Pod
+>> kubectl logs [pod-name] -c [container-name]
+
+# Viee the logs for a previously running Pod
+>> kubectl logs -p [pod-name]
+
+# Stream a Pod's log
+>> kubectl logs -f [pod-name]
+
+
+# ******************************************************************
+# **** Attivare la dashboard Ui (Alternativa Grafica a kubectl) ****
+# ******************************************************************
+	
+# Installare la Dashboard Ui
+>> kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml
+>> kubectl proxy
+
+# collegarsi da browser all'indirizzo:
+	http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+	
+# Creare un Service Account per loggarsi sulla Dashboard
+>>	cat <<EOF | kubectl apply -f -
+	apiVersion: v1
+	kind: ServiceAccount
+	metadata:
+	  name: admin-user
+	  namespace: kubernetes-dashboard
+	EOF
+
+# Creare un ClusterRoleBinding
+>> cat <<EOF | kubectl apply -f -
+	apiVersion: rbac.authorization.k8s.io/v1
+	kind: ClusterRoleBinding
+	metadata:
+	  name: admin-user
+	roleRef:
+	  apiGroup: rbac.authorization.k8s.io
+	  kind: ClusterRole
+	  name: cluster-admin
+	subjects:
+	- kind: ServiceAccount
+	  name: admin-user
+	  namespace: kubernetes-dashboard
+	EOF
+
+# Nomenclatura del DNS gestito da K8s
+<my-service-name>.<my-namespace>.svc.cluster.localhost
+
+
+# ************************
+# ***** Monitoring *******
+# ************************
+
+# k8s espone nativamente open source additions
+
+# Heapster 	-> Container Cluster Monitoring solution
+		Si inserisce nel Pod e monitora/raccoglie lo stato di salute 
+		salvando le info su InfluxDB
+# InfluxDB 	-> Database di informazione del monitoring dei Pod
+# Grafana 	-> Tool grafico di visualizzazione dei dati salvati su InfluxDB
+
+
+# *****************************************
+# ***** Namespaces e ResourcesQuota *******
+# *****************************************
+# I namespace servono per separare i diversi contesti
+# se non specificato viene assegnato al namespace "default"
+# I ResourcesQuota sono oggetti di kubernetes che servono a limitare 
+# le risorse (cpu, ram, etc..) assegnate ad un namespace
+
+# Creare un namespace
+>> kubectl create namespace [namespace-name]
+
+# Visualizzare la lista di namespace
+>> kubectl get namespace
+
+# Applicare un namespace ad un deployment
+>> kubectl apply -f [deployment.yml] --namespace=[namespace-name]
+
+# Applicare un ResourceQuota (definito nel manifest yaml) ad un namespace
+>> kubectl create -f [resoucequota.yml] --namespace=[namespace-name]
+
+# Eseguire un describe di un deployment relativo ad una particolare namespace
+>> kubectl describe deploymnet [deployment-name] --namespace=[namespace-name]
+
+
+# ******************************
+# ***** Audit monitoring *******
+# ******************************
+# Monitoring di tutti gli eventi con cui il nostro sistema interagisce. 
+# Il monitoring non è interno ai Pod ma si tratta di thread paralleli.
+
+# Auditing Policy 	-> definisce quali eventi devono essere loggati, definito tramite file yml. 
+# Auditing Backend 	-> esporta gli eventi in uno storage esterno (disco o API esterni)
+
+# E' possibile specificare tramite policy (policy.yml) le rules level che si vogliono loggare
+# ad esempio "metadata" ovvero solo i metadati. Questi dati possono essere inseriti in un file log.
+
+
+DA APPROFONDIRE
+>> kubectl get hpa
+
+
+# ***************************************
+# Key Kubernetes Architecture Items *****
+# ***************************************
+
+- Master Node : Nodo Principale - con cui si interfacia kubectl client
+	- kube-apiserver: Api per interagire esternamente con il cluster e per la Dashboard
+	- kube-controller-manager: Gestore dei processi
+	- kube-scheduler: Scheduler
+	- etcd : sistema di salvataggio dati del cluster / secrets
+	
+- Worker Node: Nodi che contengono i Pod / container
+	- kubelet: riceve i comandi, dal Master node, da applicare ai pod/deployment/etc..
+	- kube-proxy: proxy degli IP per la comunicazione tra i vari pod
+	
+
+# **************************
+# ******* kube-proxy *******
+# **************************
+Quando kube-proxy parte in "IPVS proxy mode" cerca se nel Nodo è disponibile un "IPVS kernel module",
+	se non lo trova partirà in "iptables proxy mode"
+- Modalità con iptables (senza l'uso dello spazio kernel)
+- Modalità IPVS ovvero tramite virtual server installato sul nodo (con l'uso dello spazio kernel)
+
+# Vedere se è installato l'addon kube-dns (DNS cluster offerto da k8s)
+>> kubectl get services kube-dns --namespace=kube-system -o wide
