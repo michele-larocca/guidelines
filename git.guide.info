@@ -30,3 +30,6 @@
 
 - Rimuove la verifica SSL (Caso di errori di check verificato scaduto durante il clone)
 >> git config --global http.sslVerify false
+
+- Far in modo che la Pass venga richiesta (quando viene aggiornata)
+>> git config --global credential.helper wincred

@@ -1,0 +1,153 @@
+############################################
+##### Comandi di installazione e avvio #####
+############################################
+
+# install on CentOS (Linux)
+yum install httpd
+
+# abilita run automatico all'avvio
+systemctl enable httpd
+
+# disabilita run automatico all'avvio
+systemctl disable httpd
+
+# Open port 80 and 443 on Firewall
+firewall-cmd --permanent --add-port=80/tcp
+firewall-cmd --permanent --add-port=443/tcp
+
+# Start/stop
+sudo systemctl start httpd
+sudo systemctl status httpd
+sudo systemctl stop httpd
+sudo systemctl reload httpd
+sudo systemctl restart httpd
+
+# Enable automatic run of Apache on startup VM
+systemctl enable httpd
+
+# Riavvio dell'apache
+/etc/init.d/apache restart
+
+###########################
+##### Files di config #####
+###########################
+
+# File principale di configurazione 
+httpd.conf
+
+# Effettua una verifica sulla configurazione
+apachectl configtest
+
+# I file .htaccess 
+consentono di effettuare modifiche alla configurazione di Apache 
+che si applichino in maniera specifica ad una particolare directory (e alle sue subdirectory)
+
+
+#################################################
+##### Regole/Direttive sulla configurazione #####
+#################################################
+
+# ServerRoot: 
+# specifica la gerarchia delle directory predefinita per httpd; 
+# al suo interno si trovano tipicamente le directory conf/ e logs/
+ServerRoot "/opt/apache"
+
+# DocumentRoot: 
+# specifica la directory del filesystem contenente le risorse da rendere disponibili
+DocumentRoot "/opt/apache/htdocs"
+
+# DirectoryIndex: 
+# indica il nome della risorsa da gestire quando in coda all’URL è presente il nome di una directory.
+DirectoryIndex index.html
+
+# <Directory> ... </Directory>
+permettono di applicare delle regole soltanto alla cartella specificata.
+
+# LoadModule: attiva un modulo
+LoadModule ssl_module modules/mod_ssl.so
+
+# Include: Permettono di includere altri file/directory di config
+Include conf/httpd-user.conf
+
+# Listen: specifica le porte su cui bisogna stare in ascolto
+Listen 0.0.0.0:443
+Listen 0.0.0.0:80
+
+
+############################
+##### Gestione dei Log #####
+############################
+
+# ErrorLog: controlla la destinazione del log;
+ErrorLog "logs/error_log"
+ErrorLog "|/opt/apache/bin/rotatelogs -l -L logs/error_log -f -n 10 logs/error_log.rotating 86400"
+
+# ErrorLogFormat: permette di specificare il formato degli eventi indicati nei log;
+ErrorLogFormat "[%{u}t] [%-m:%l] [pid %P:tid %T] %7F: %E: [client\ %a] %M% \ %L"
+
+# LogLevel: permette di regolare il livello di dettaglio delle informazioni riportate nei log;
+LogLevel info
+
+# CustomLog: consente di indicare ulteriori destinazioni per i messaggi di log oltre a quella indicata da ErrorLog
+CustomLog "|/opt/apache/bin/rotatelogs -l -L logs/access_log -f -n 10 logs/access_log.rotating 86400" custom env=!dont_log
+
+# Il LogFormat può essere formato dalle seguenti proprietà:
+ %b –> Byte inviati, esclusi gli headers HTTP;
+ %f –> Il Filename
+ %{VAR}e –> Il contenuto della variabile d’ambiente {VAR}
+ %h –> L’host remoto
+ %a –> L’indirizzo IP remoto
+ %l –> Il logname remoto, se specificato
+ %p –> La porta dalla quale il server esegue la richiesta
+ %P –> L’ID del processo che esegue la richiesta
+ %r –> La prima riga della richiesta
+ %s –> Lo stato della richiesta
+ %t –> L’orario delle richiesta
+ %T –> Il tempo in secondi per eseguire la richiesta
+ %u –> Il nome dell’utente remoto
+ %U –> L’url richiesta
+
+
+
+#################################
+#### HTTPS su un VirtualHost ####
+#################################
+
+# Abilitare il HTTPS su un VirtualHost è necessario aggiungere almeno 3 direttive
+# SSLEngine: abilita o disabilita il layer di trasporto sicuro (SSL o TLS);
+# SSLCertificateFile: percorso del certificato del server
+# SSLCertificateKeyFile: percorso della chiave privata corrispondente alla chiave pubblica contenuta certificato;
+Listen 443
+<VirtualHost *:443>
+    ServerName www.miosito.it
+    SSLEngine on
+    SSLCertificateFile "/etc/apache2/ssl/www.miosito.it.cert"
+    SSLCertificateKeyFile "/etc/apache2/ssl/www.miosito.it.key"
+</VirtualHost
+
+# Un certificato può essere richiesto dall'AC o autogenerato con openssl
+# req -x509 : richiede generazione diretta (senza passare da AC) del cert
+# -nodes : indica che non sarà necessaria una pass per leggere la private key in quanto depositata nel Server. In caso contrario bisognerà avviarlo ogni volta con la pass.
+# -day: giorni di validità
+# -newkey rsa:2048 : generazione di una nuova key
+# -keyout : path della key privata
+# -out: path del certificato
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/miocert.key -out /etc/ssl/certs/miocert.crt
+
+
+
+
+
+
+
+
+# configurazione di messaggi o pagine di errore
+ErrorDocument 404 "Spiacenti, la pagina richiesta non è disponibile"
+ErrorDocument 404 /error_pages/404.html
+
+
+
+
+
+
+
