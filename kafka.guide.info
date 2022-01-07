@@ -13,11 +13,19 @@ bin/kafka-topics.sh \
 --zookeeper localhost:2181 \
 --replication-factor 1 --partitions 1
 
-# Create a Topic by bootstrap-server
+# Create a Topic by bootstrap-server with retention policy 15 min
 bin/kafka-topics.sh \
 --create --topic my-topic1 \
 --bootstrap-server localhost:9092 \
---replication-factor 1 --partitions 1
+--replication-factor 1 --partitions 1 \
+--config retention.ms=900000
+
+# Create a Topic by bootstrap-server For a KTable (compact)
+bin/kafka-topics.sh \
+--create --topic my-topic1 \
+--bootstrap-server localhost:9092 \
+--replication-factor 1 --partitions 1 \
+--config cleanup.policy=compact
 
 # Eliminare un Topic
 bin/kafka-topics.sh \
@@ -43,7 +51,11 @@ bin/kafka-console-producer.sh --topic my-topic --broker-list localhost:9092
 bin/kafka-console-producer.sh --topic my-topic --bootstrap-server localhost:9092
 
 # Creare un consumer (che punta al broker:9092)
-bin/kafka-console-consumer.sh --topic my-topic --from-beginning --bootstrap-server localhost:9092
+bin/kafka-console-consumer.sh --topic my-topic \
+--from-beginning --bootstrap-server localhost:9092 \
+--property print.key=true \
+--property print.timestamp=true \
+--property key.separator=# 
 
 
 # Test di Performance Producer (Simula sent message di un producer)
@@ -55,3 +67,6 @@ value.serializer=org.apache.kafka.common.serialization.StringSerializer
 
 # Kafka memorizza gli offset dei consumer nel topic __consumer_offsets (con 50 partition)  
 bin/kafka-topics.sh --zookeeper localhost:2181 --describe --topic __consumer_offsets
+
+#Example on kafka stream
+https://github.com/simplesteph/kafka-streams-course.git
