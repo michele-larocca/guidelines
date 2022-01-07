@@ -4,3 +4,12 @@
   - Spring Web Starter
   
   
+  
+####################
+#### Annotation ####
+####################
+
+# Condizionare un'implementazione
+@Component
+@ConditionalOnProperty(name="propertyParent.propertyChild", havingValue="true", matchIfMissing = true)
+  
