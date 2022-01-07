@@ -1,0 +1,8 @@
+# searc string into files
+sudo find /var/log/ -name '*.*' -exec grep -i 'ERROR Shutdown broker' {} \; -print
+
+### Per aprire la porta 9092
+sudo firewall-cmd --zone=public --add-port=9092/tcp
+
+# Vedere le porte aperte/usate
+netstat -tulpn | grep 9092

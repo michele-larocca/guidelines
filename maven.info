@@ -1,0 +1,4 @@
+Eseguire MVN Release da Shell
+* svn cleanup
+* mvn -P full release:prepare -DautoVersionSubmodules=true
+* mvn -P full release:perform -DuseReleaseProfile=false
