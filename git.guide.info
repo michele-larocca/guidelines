@@ -33,3 +33,6 @@
 
 - Far in modo che la Pass venga richiesta (quando viene aggiornata)
 >> git config --global credential.helper wincred
+
+- Disabilitare la verifica dei certificati
+>> git config --global http.sslVerify false
