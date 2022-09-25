@@ -1,0 +1,13 @@
+# Inventory define host/group of VM and others properties used by ansible to connect for that environment.
+
+# Execute one Task - Module or command
+# ansible <hosts> -a <command> -i <inventory.txt>
+# ansible <hosts> -m <module> -i <inventory.txt>
+# all group is automatically created for all hosts defined in inventory file.
+#
+>> ansible all -a "/sbin/reboot" -i inventory.txt
+>> ansible target1 -m ping -i inventory.txt
+
+# A Playbook define a list of task to execute (command/module/etc..)
+# Execute a playbook defined by file yaml 
+>> ansible-playbook <playbook-file> -i inventory.txt
