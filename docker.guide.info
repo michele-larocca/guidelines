@@ -19,6 +19,9 @@
 # Vedere i log di esecuzione del container 
 >> docker logs <container-id-or-name>
 
+# Vedere i log in tail degli ultime 100 righe
+>> docker logs -f -n 100 <container-id-or-name>
+
 #vedere la lista di immagini
 >> docker images
 
@@ -35,7 +38,7 @@
 # -v  		-> Create a Volume
 # $(pwd) 	-> Host Location, If not passed to Docker It uses a default: /mnt/.../var/lib/docker/volumens/${ID_CONTAINER}/_data
 # /var/www	-> Container Volume
->> docker run -p 8080:3000 - v $(pwd):/var/www node
+>> docker run -p 8080:3000 -v $(pwd):/var/www node
 
 # Eliminare un container ed il suo volume (Sconsigliato)
 >> docker rm -v <container-id-or-name>
