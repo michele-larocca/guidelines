@@ -1,0 +1,106 @@
+TPC -> Trasmisison Control Protocol
+
+# Encryption Protocol used in HTTPS
+TLS -> Transport Layer Security (used is 1.2 or 1.3)
+SSL -> Socket Secure Layer (DEPRECATED) 
+
+# nslookup -> to discovery IP address behind the website
+nslookup www.google.com
+
+#########################################
+## Hash: from variable to Fixed length ##
+#########################################
+Before to send a data the hash function applied to the data create generate an Hash and send data and hash.
+Who receive the data and the Hash can apply the same hash function to the data in order to create an new Hash 
+and compare it with the hash received to check the integrity of the data received.
+
+Hashing Algorithms based on Data: 
+MD5 (128 bit), 
+SHA-1 (160 bit), SHA-256 (256 bit), SHA-512 (512 bit)
+
+Hashing Algorithms based on Data and key:  
+HMAC (can be also used with MD5 or SHA)
+
+Example:
+>> md5sum file.txt
+>> shasum file.txt
+>> shasum -a 256 file.txt
+>> shasum -a 512 file.txt
+
+####################################
+#### symmetric Encryption - AES ####
+####################################
+symmetric Encryption : encrypted and decrypted with the same special key.
+Obsolete algorithms: DES, 3 DES
+Modern algorithm: AES (Advanced encryption system) 
+
+
+#####################################
+#### Asymmetric Encryption - RSA ####
+#####################################
+Asymmetric Encryption : encrypted and decryptedusing Private and Public Keys.
+
+Case 1: Anybody who has the Public Key can encrypt data 
+	and the owner that has the private key can decrypt the data.
+	
+Case 2: The owner who has the Private Key can create a crypted Hash signature 
+	and anybody who has the public key can decrypt the hash received for the comparing.
+	RSA is not used in HTTPS for data encryption because is too slow 
+	and because bi-directional data encryption requires RSA key pair on both side.
+	
+Modern algorithm: RSA with 1024, 2048, 3072 or 4096 key length
+
+KPI : Public Key Infrastructure, is a set of protocol and algorithms and other elements as CA o intermediate CA to perform a secure comunication.
+	It guarantees the Public key is trusted. It contains the public key and other information.
+	
+The main goal of the Certificate is to store the Public key and base on the certificate we can build chains of trust.
+
+Certificate is a digital data that contains:
+- Information about owner
+- Information about issuer (CA or Intermediate CA)
+- Signature: Hash encrypted with private key of the issuer
+- public key (of the owner)
+
+The are also Self-signed certificate: is issued and signed by the owner
+
+# Generate private key
+>> openssl genrsa
+	
+# Generate private key encrypted by a password and print it in the shell
+>> openssl genrsa -aes256
+
+# Generate private key encrypted by a password and store it in a file
+>> openssl genrsa -aes256 -out private.pem
+
+# Generate public key by private key and print it in the shell
+>> openssl rsa -in private.pem -outform PEM -pubout
+
+# Generate public key by private key and store it in a file
+>> openssl rsa -in private.pem -outform PEM -pubout -out public.pem
+
+All Root Certificate are trusted by the browser beacause the OS have the list of CA.
+In Windows 
+
+####################################################
+### Cryption data between Browser and Server Web ###
+####################################################
+The cryption data is made by a symmetric algorithm by a key
+the key can be made in different way:
+
+1) The client generate a key and crypt it with a Public key
+This key is sent to the web server than decrypt it with a private key.
+Finally the decrypted key is used for both side to crypt data.
+
+2) Use of Elliptic Curve or Diffe Hellman algorithms to generate the key. 
+The same key is generate in both side by a serie of value passed between 
+browser and server used to generate the key.
+Finally the key generated is used for both side to crypt data.
+
+#############################################
+##############       SSH     ################
+#############################################
+
+# Generate SSH Key for 2048-bit RSA
+>> ssh-keygen -t rsa -b 2048
+
+
