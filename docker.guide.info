@@ -46,6 +46,9 @@
 # Eliminare tutti i container esistenti
 >> docker rm -f $(docker ps -a -q)
 
+# Ferma tutti i container esistenti
+>> docker stop $(docker ps -a -q)
+
 # Fermare il run di un container
 >> docker stop <name-or-id-container>
 
