@@ -1,0 +1,491 @@
+#####################################
+#### Inizializzazione PostgreSQL ####
+#####################################
+
+E' possibile inizializzare il postgres tramite uno dei seguenti 2 comandi.
+-D = si riferisce alla directory location dei dati
+-W = e' possibile usare questa opzione per forzare il super user a chiedere la password prima di iniziolizzare il db
+
+>> initdb -D /usr/local/pgsql/data
+>> pg_ctl -D /usr/local/pgsql/data initdb
+
+
+##############################
+#### Start / Stop Cluster ####
+##############################
+
+Start PostgreSQL Windows
+>> pg_ctl -D "C:\Program File\PostgreSQL\12\data" start
+
+Start PostgreSQL Linux
+>> systemctl start postgresql-12
+
+Stop PostgreSQL Windows
+shutdown mode => Smart or Fast (Defautl) or Immediate
+>> pg_ctl stop -D "C:\Program File\PostgreSQL\12\data" -m <<shutdown mode>>
+
+Stop PostgreSQL Linux
+>> systemctl stop postgresql-12
+
+Reload PostgreSQL (Windows & Linux) to reload configuration without restart the instance
+On linux >> systemctl reload postgresql-12
+On Windows >> pg_ctl reload
+Psql Command >> SELECT pg_reload_conf();
+
+Retart PostgreSQL (Windows & Linux) instance
+On linux >> systemctl restart postgresql-12
+On Windows >> pg_ctl restart
+
+Enable automatic PostgreSQL up when the VM is started
+On linux >> systemctl enable postgresql-12
+
+It is possible to check information abut the cluster by executin pg_controldata
+
+##############################
+####### Backup database ######
+##############################
+# login as postgres user and then run pg_dump to do a dump for the database "db_name"
+
+Backup a dump in plain-text SQL script file
+>> pg_dump db_name > dump.sql
+
+Backup a dump in directory (db_name_directory) format archive
+>> pg_dump -F d db_name -f dump_directory
+
+Backup a dump in format archive file
+>> pg_dump -F t db_name > dump.tar
+
+Backup a dump in custom format archive
+>> pg_dump -F c db_name > dump.dump
+
+To back up all PostgreSQL databases in plain-text SQL script file (all-dbs.sql)
+>> pg_dumpall > all-dbs.sql
+
+To backup a large dump with gzip
+>> pg_dump db_name | gzip > dump.gz
+
+To backup a large dump and split it in different pieces (kB:k, MB: m, GB: g=)
+>> pg_dump db_name | split -b 100m - dump.sql
+
+
+To backup a remote dump 
+>> pg_dump -U db_role_name_connect -h 10.10.20.10 -p 5432 db_name > dump.sql
+
+To dump a database directly from one server to another
+>> pg_dump -U db_role_name_connect -h 10.10.20.10 db_name | pqsl -U db_role_name_connect -h 10.10.20.30 db_name
+
+Other parameters:
+-c : Clean - Output commands to clean (drop) database objects
+-C : Create schema
+-s : Schema only
+-a : Data only
+-d : followed by Database Name if it is not the first parameter
+-U : user to connect
+-O : No Owner (Do not output commands to set ownership of objects to match the original database)
+
+######## Example To DUMP
+To Dump only schema
+>> pg_dump -f /home/ng-dms/exported_act_dump/ovh-ngdms-yyyymmdd.schema.sql -c -C -s -d ngdms -U postgres
+
+To Dump only data
+>> pg_dump -Fc -f /home/ng-dms/exported_cdact_dump/ovh-ngdms-yyyymmdd.custom -a -C -O -d ngdms -U postgres
+
+
+
+
+################################
+###### Restore a database ######
+################################
+# login as postgres user and then restore dump of a database "db_name" 
+
+Restore a database with psql command for sql script format
+>> psql db_name < dump.sql
+
+Restore a database with custom format
+>> pg_restore -d db_name dump_directory
+>> pg_restore -d db_name dump.tar
+>> pg_restore -d db_name dump.dump
+
+Restore only a table
+>> pg_restore -U postgres -d <db_name> -t <table_name> dump.dump
+
+Restore dump of all databases
+>> pgsql -f all-dbs.sql postgres
+
+
+
+################################################################
+###### Create and Drop Database, Schema, User and Table	  ######
+################################################################
+We Can create a DATABASE from template1 o template0;
+The template1 is created from template0.
+On template0 no connection allowed.
+
+psql: CREATE DATABASE newdb TEMPLATE template0;
+
+Create database, user and schema
+>> create database <db_name> owner postgres;
+>> create user <user_name> with password '<password>' CREATEDB;
+>> create schema <schema_name>;
+>> create schema autorization <user_name>;
+
+Drop database, user and schema
+>> drop database <db_name>;
+>> drop user <user_name>; 
+>> drop schema <schema_name>;
+
+Create table and inset into it
+>> create table vehicle(des varchar(100));
+>> insert into vehicle values('public car');
+
+Create table into the schema 'schema_name' and inset into it
+>> create table schema_name.vehicle(des varchar(100));
+>> insert into schema_name.vehicle values('public car');
+
+Create table in a specific Tablespace
+>> create table <table_name> .... tablespace <tablespace_name>;
+
+Create Inheritance Table and Partitioning -> create table <table_name> inherits(<table_parent>)
+>> create table bookings(flightno varchar(100), flightname varchar(100), booking_data timestamp);
+>> create table jan_bookings(check(booking_date >= '2023-01-01' and booking_date <= '2023-01-31')) inherits(bookings);
+>> create index jax_idx on jan_bookings using btree(booking_date);
+
+Create Trigger 
+>> create trigger <trigger_name> before insert on <table_name> for each row execute procedure <function_name>;
+
+Copy table (with data and without data). Create a new table as a copy without relationship
+>> create table <new_table_name> AS TABLE <table_to_clone>;
+>> create table <new_table_name> AS TABLE <table_to_clone> WITH NO DATA;
+
+Cluster a Table by Index - to apply index in physical data
+>> cluster <tabel_name> using <index_name>;
+
+
+############################
+###### Tablespace	  ######
+############################
+Show all tablespace
+>> select * from pg_tablespace;
+
+Create Tablespace to separata data
+>> create tablespace <tablespace_name> location 'C:\new_tablespace_dir'
+
+Show tables that belong to the tablespace
+>> select * from pg_tables where tablespace='<tablespace_name>'
+
+Move table data to another tablespace
+>> Alter table <table_name> set tablespace <new_tablespace>;
+
+Show where data of a table is located in filesystem
+>> select pg_relation_filepath('<table_name>');
+
+Temporary data and idexes are created by postgreSQL when it need to hold large dataset (ex: sorting or complex query).
+To create a tempory tablespace you have to create a specific tablespace and set it to "temp_tablespaces" param of postgresql.conf.
+(restart postgres after the editing config)
+
+
+##################################################
+###### Grant and revoke privileges		 	######
+##################################################
+Add Grant to the user to connetc on a database
+>> grant all privileges on database <db_name> to <user_name>;
+
+Add grant to select table to user by owner of the table or superuser
+>> grant select on <table_name> to <user_name>;
+>> grant SELECT(<column_name>), UPDATE(<column_name>) ON <table_name> TO <user_name>;
+
+Others grants for all objects by superuser
+>> grant USAGE on schema <schema_name> TO <user_name>;
+>> grant select, insert, update, delete ON ALL TABLES IN SCHEMA <schema_name> TO <user_name>;
+>> grant ALL PRIVILEGES ON ALL TABLES IN SCHEMA <schema_name> TO <user_name>; 
+>> grant ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA <schema_name> TO <user_name>; 
+
+Alter Grant by superuser
+>> ALTER USER <user_name> CREATEDB;
+>> ALTER USER <user_name> WITH SUPERUSER;
+>> ALTER USER <user_name> WITH NOSUPERUSER;
+
+Revoke access and grants
+>> revoke connect on database <db_name> from a public;
+>> revoke DELETE, UPDATE ON <table_name> FROM <user_name>;
+>> revoke ALL ON <table_name> FROM <user_name>;
+>> revoke SELECT ON <table_name> FROM <user_name>;
+
+
+##################################################
+###### 	Connect to Psql and Utils command 	######
+##################################################
+Connect by Psql command line
+>> psql -U postgres -d <database_name>
+
+Connect from a remote Host (The IP must be authorized to connect in pg_hba.conf)
+>> psql -U postgres -h <IP_ADDRESS>
+
+Show field value of postgresql.conf (ex max_connections)
+>> show max_connections;
+
+COMMAND:
+Change Db Conn:						\c <database_to_connect>
+Prev Command:						\g
+Enable / Disable Timing Query		\timing
+Edit Query							\e
+
+SHOW INFOMATION OBJECT:
+Database:				\l
+User:					\du or \du+
+Schema: 				\dn	or \dn+
+Table:					\dt or \dt+
+Connection:				\conninfo
+Colums Of Table:		\d <table_name>
+Function:				\df or \df+
+View:					\dv or \dv+
+Sequence:				\ds or \ds+
+Show Data Dir:			SHOW data_directory;
+Show Field Auto Conf:	SHOW <field_name>;
+Show Rep Publication	\dRp
+Show Rep Subscription	\dRs
+
+
+Show if a changed configuration field is applied
+>> select * from pg_file_settings;
+
+Reload Configuration
+>> select * from pg_reload_conf();
+
+Update configuration field in postgresql.auto.conf
+>> ALTER SYSTEM SET work_mem = '5MB';
+
+Reswet all valued written in postgres.auto.conf
+>> ALTER SYSTEM reset all;
+
+Load SQL File:
+>> psql -U postgres -d <database_name> -f <sql_file>
+
+Export Query result INTO a File
+>> \o output.csv
+>> select * from <table_name>;
+
+Enable / Disable Autocommit
+>> \set AUTOCOMMIT off
+>> rollback;
+>> \set autocommit on
+
+Utils Query:
+>> select current_schema();
+>> select current_user;
+>> select current_database();
+>> select current_setting('max_connection');
+>> select pg_postmaster_start_time();
+>> select now() as current;
+>> select (now() + interval '1 hour') as an_hour_later;
+>> SELECT client_addr, state FROM pg_stat_replication;
+>> SELECT * FROM pg_catalog.pg_subscription;
+>> SELECT * FROM pg_catalog.pg_publication;
+>> select * from pg_catalog.pg_publication_tables;
+>> select pg_drop_replication_slot('dsotp_subscription');
+
+##################################
+###### 	Pg System Catalog 	######
+##################################
+
+LIST OF SYSTEM PG TABLE:
+- pg_database
+- pg_stat_database
+- pg_tablespace
+- pg_operator
+- pg_available_extensions
+- pg_shadow
+- pg_timezone_names
+- pg_locks
+- pg_tables
+- pg_settings
+- pg_indexes
+- pg_views
+
+
+######################
+#### Explayn Plan ####
+######################
+Explain Query cost
+>> explain select * from <table_name>;
+
+##########################
+#### Rebuid index  #######
+##########################
+To see if an index is bloated or fragmented we can use  extension "pgstattuple"
+>> create extension pgstattuple;
+
+See Index status - see leaf_fragmentation field
+>> select * from pgstatindex('<index_name>');
+
+Execute rebuild index
+>> reindex index <index_name>;
+
+
+###########################
+###### Pg_basebackup ######
+###########################
+Backup Entire Cluster PostgreSQL to another database postgresql.
+>> pg_basepackup -h <server_address> -p <port> -U postgres -D <directory_data_path> -Fp -Xs -P
+
+Params:
+D: directory when put all backup data files
+F: Output Format [p: plain, t: tar]
+X: wal method [s: stream, f=fetch]
+P: show progress
+z: gZip
+
+In a file backup_label you can found the info for the basebackup done with the start time value. 
+You can start the next backup starting from the date/time of the last backup.
+
+
+##############################################################################
+###### Continuous Archiving (WAL Files) - PITR (Point In Time Recovery) ######
+##############################################################################
+To start Continuous archiving configure postgres.conf and restart postgreSQL service
+	wal_level = replica
+	archive_mode = on
+	archive_command = 'cp -i %p /opt/archivedir/%f'
+	archive_command = 'rsync -a p postgres@<ip_address>:/var/lib/postgresql/archive/%f'
+
+Force to start a backup called text1 in configured directory
+>> select pg_start_backup('test1');
+
+Stop continuous backup
+>> select pg_stop_backup();
+
+To retore the archive files you have to write a command in the restore_command in postgresql.conf
+	restore_command = 'cp /opt/archivedir/%f %p'
+
+It is possible specify one of theese recovery mode: 
+	recovery_target=immediate 		# recovery should end as soon as a consistent state is reached
+	recovery_target_lsn='0/EX0033'	# specify the LSN (Log Sequence Number) of the wrote-ahead log
+	recovery_target_name			# recovery By name of a restore point (create with pg_create_restore_point)
+	recovery_target_time			# recovery By time
+	recovery_target_xid				# by transaction ID
+	recovery_target_inclusive		# If "ON" (default) The recovery will be stop when the target will be reached
+	
+To see the current LSN you have to do the query:
+>> select pg_current_wal_lsn(),pg_walfile_name(pg_current_wal_lsn());
+
+
+###########################################################################
+##### WAL File / Log based Shipping Satnadby - Physical Replication #######
+###########################################################################
+Clone entire data files by copy data from file system
+Execute in the origin / primary database this command by psql - START BACKUP MODE
+>> select pg_start_backup('dbrep');
+
+copy the content of the data directory from the primary to the standby / destination postgresql 
+OR
+execupte from the master this command
+>> rsync -avz /var/lib/postgresql/12/data/* postgres@<ip_address>:/var/lib/postgresql/12/data/
+
+Execute in the origin / primary database this command by psql - STOP BACKUP MODE
+>> select pg_stop_backup();
+
+NOTA: If the master postgresql has archive commend specified in postgresql.conf you have to comment out in stanby / destination postgresql config
+
+If You want create a File / Log shipping replication you have to set archive command in primary and restore command in replica postgresql.
+The directory of the archive generationg has reaching from the secondary
+Then set standby.signal empty file in replica postgresql (to set read-only mode).
+
+To force on the primary the writing of a WAL File (non already completed - not 16Mb reached) we have to do this psql command
+>> select pg_switch_wal();
+
+To avoid the previous command we can set the archive_timeout to force writing a WAL File if the size doesn't reached the max size (16 Mb)
+
+In case of failover ofthe master we can promote the stanby as primary (manual step)
+1) With Psql
+>> select pg_promote();
+OR
+2) With pg_ctl promote command
+pg_ctl promote -D /var/lib/postgresql/12/data
+
+
+##########################################################
+##### Streaming Replication - Physical Replication #######
+##########################################################
+In the Streaming replication the standby connect to the primary to get the data without wait for the full WAL archive file.
+The connection is done by Wal sender and Wal receiver beetween primary and replica.
+
+Important Parameters
+wal_level=replica --> ensure that writes enough data to supporot WALarchiving and replication
+wal_log_hints=on  --> required for pg_rewind capability when standby goes out of sync with primary
+max_wal_sender=integer --> maximum number of concurrent conection from standby. Default is 10, with 0 it can be disabled.
+wal_keep_segments=integer --> specifies the minimum number of past log file segment kept in the pg_wal direcotry
+hot_standby=on --> Enable read only connection on the node when it is in standby role. (ignered if it is a master)
+
+Replication slots (for physical and logical replication) has used to override the wal_keep_segment value.
+These have to create manualy (default is 10)
+
+Monitor on Primary
+>> select * from pg_stat_replication;
+
+Monitor curretn_wal in Primary, it should be the same valpue of last_wal_receive in standby
+>> select pg_curretn_wal_lsn();
+>> select pg_last_wal_receive_lsn();
+
+Create/Monit/delete a physical_replciation slot
+>> select pg_create_physical_replication_slot('standby');
+>> select * from pg_replication_slots;
+>> select pg_drop_replication_slot('standby');
+
+Other command for the Standby
+>> select pg_is_in_recovery();
+>> select * FROM pg_stat_wal_receiver;
+
+Syntax to enable Synchronous (need a reload to aply new changes)
+>> ALTER SYSTEM SET synchrounous_standby_names TO '*'
+
+In case of failover ofthe master we can promote the stanby as primary (manual step)
+1) With Psql
+>> select pg_promote();
+OR
+2) With pg_ctl promote command
+pg_ctl promote -D /var/lib/postgresql/12/data
+
+To create replication in the standby, remove data and execute this command
+>> pg_basebackup -h <PRIMARY_DB_IP_ADDRESS> -p 5433 -U <replication_user> -D /var/lib/postgresql/12/main/ -Fp -Xs -P -R -C -S <pgstandby_slot_rep_name>
+
+Create a replication_slot manuanly
+1) Create replication_slot in a primary
+>> select pg_create_physical_replication_slot('rep_slot_test');
+2) set the param primary_slot_name 'rep_slot_test' in postgresql.conf of the primary
+3) set the param primary_slot_name 'rep_slot_test' in postgresql.auto.conf of the replica
+
+
+#################################
+##### Logical Replication #######
+#################################
+
+On primary
+>> CREATE PUBLICATION mypub FOR TABLE reptable1,reptable2;
+>> CREATE PUBLICATION mypub FOR ALL TABLES;
+
+On Replica
+>> CREATE SUBSCRIPTION mysub CONNECTION ‘host=<ip_address> dbname=<db_name>> user=<db_user> password=<db_password>’ PUBLICATION mypub;
+
+Check Publication / Subscription
+>> SELECT * FROM pg_stat_replication;
+
+To add table on existing Publication (need refresh subscription on Replica)
+>> ALTER PUBLICATION mypub ADD TABLE reprtable3;
+Refresh subscription on Replica
+>> ALTER SUBSCRIPTION mysub REFRESH PUBLICATION;
+
+Remove delete option in Publication
+>> ALTER PUBLICATION mypub SET (publish='insert,update');
+
+If the table hasn't have a primary key you can't delete a record. To do that you have specify an identity replication.
+>> ALTER TABLE <table_name> REPLICA IDENTIFY FULL;
+>> ALTER TABLE <table_name> REPLICA IDENTIFY NOTHING;
+
+If a column is added or dropped in primary, you have disable subscription, add/drop the colum and enable the subscription on replica
+>> ALTER SUBSCRIPTION mysub DISABLE;
+>> ALTER TABLE ADD COLUMN <column_nam> <column_type>;
+>> ALTER SUBSCRIPTION mysub ENABLE;
+
+Drop Publication or Subscription (Replication slots are automaticaly dropped)
+>> DROP SUBSCRIPTION mysub;
+>> DROp PUBLICATION mypub;
