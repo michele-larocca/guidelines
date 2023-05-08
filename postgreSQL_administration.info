@@ -466,8 +466,10 @@ On primary
 On Replica
 >> CREATE SUBSCRIPTION mysub CONNECTION ‘host=<ip_address> dbname=<db_name>> user=<db_user> password=<db_password>’ PUBLICATION mypub;
 
-Check Publication / Subscription
+Check Publication on primary
 >> SELECT * FROM pg_stat_replication;
+Check Subscription on Replica
+>> select * from pg_stat_subscription;
 
 To add table on existing Publication (need refresh subscription on Replica)
 >> ALTER PUBLICATION mypub ADD TABLE reprtable3;
