@@ -85,6 +85,12 @@
 # Ispezionare dettagli di una network
 >> docker network inspect <nome-network>
 
+# Rimuovere una Network
+>> docker network rm <nome-network>
+
+# disconnettere un container dalla network
+>> docker network disconnect -f <nome-network> <name-or-id-container>
+
 
 **** Key Dockerfile Instructions ****
 
