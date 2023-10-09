@@ -104,3 +104,12 @@ Finally the key generated is used for both side to crypt data.
 >> ssh-keygen -t rsa -b 2048
 
 
+#############################################
+#############       HTTPS     ###############
+#############################################
+
+Create SSL Certificate
+>> openssl req -x509 -days 100 -nodes -newkey rsa:2048 -keyout <path_private_key>.key -out <path_certificate>.cert
+
+Show certificate detail info
+>> openssl x509 -in <path_certificate>.cert -noout -text
