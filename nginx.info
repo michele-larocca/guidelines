@@ -1,0 +1,696 @@
+######### NGINX Guideline ################
+
+Main Context: The most general context is the "main" or "global" context.
+It represents the broadcast environment for Nginx configuration:
+- the group to run the worker processes 
+- the number of workers
+- the file to save the main process’s PID
+
+Events Context: The “events” context is contained within the “main” context. 
+It is used to set global options that affect how Nginx handles connections at a general level
+
+HTTP Context: This context will contain all of the directives and other contexts necessary to define how the program will handle HTTP or HTTPS connections. 
+It is a sibling of the events context
+
+Server Context: This context is declared within the “http” context. 
+User can have as many server blocks as you need, each of which can handle a specific subset of connections.
+
+Location Context: Location blocks live within server contexts and, unlike server blocks, can be nested inside one another.
+
+Upstream Context: This context is used to define and configure “upstream” servers. 
+It should be placed within the http context, outside of any specific server contexts.
+This context defines a named pool of servers that Nginx can then proxy requests to.
+
+Mail Context: Function of the mail context is to provide an area for configuring a mail proxying solution on the server.
+The mail context is defined within the “main” or “global” context.
+
+##########################################
+######   Install Nginx and Config    #####
+##########################################
+# Install nginx
+sudo apt-get install nginx
+
+# To check if the current editing of the nginx.conf is correct before apply
+nginx -t
+
+# Reload configurazion
+nginx -s reload
+systemctl reload nginx
+
+####################################
+############# Optimization #########
+####################################
+
+####### WORKER PROCESSES #######
+# NGINX default worker process are 1. Worker Processes can be defined via directive "worker_processes".
+# This directive is responsible for letting our virtual server know how many workers to spawn once it has become bound to the proper IP and port.
+# It is common practice to run 1 worker process per core CPU.
+# with the command "nproc" or "lscpu" it is possible see the num of core of the machine and set it as worker processes.
+Example:
+	user: www-data;
+	worker_processes: 2
+	
+# It is possible set the value of "worker_processes" to "auto" to automatically value it with number of the core of the machine.
+Example:
+	user: www-data;
+	worker_processes: auto	
+	
+	
+####### WORKER CONNECTION #######
+# This directive tells our worker processes how many people can simultaneously be served by Nginx. This is the child of Events Context.
+# The default value is 768. Do not set the connection value greater than the maximum number of files that can be opened at the same time by the operating system.
+# You can see it with "ulimit -n" command.
+Example:
+	events {
+		worker_connections 1024;
+	}
+
+#############################################
+######## Virtual Host / Server Context ######
+#############################################
+# Every Server Context is as a virtual host that listen on a defined port
+# Every Serve has a server_name that define the domain, sub_domain o IP when It exists.
+# It can define a root path that is the path where the static files are searched.
+Example:
+
+	http {
+		server {
+			listen 80;
+			server_name <IP_ADDRESS>;
+			root <web_site_root_directory>;
+		}
+	}
+
+# Set the corret mine-types for the files inside the http context. The default is text/plain for each resource.
+
+	types {
+		text/html htoml;
+		text/css css;
+		#...
+	}
+
+OR
+
+	include mime.types; # Is a file inside the nginx directory with all types.
+
+
+###############################
+##########    Log     #########
+###############################
+
+log_format <log_format_name> '$remote_addr [$time_local] '
+				 '$protocol $status $bytes_sent $bytes_received '
+				 '$session_time';
+
+access_log  /var/log/nginx/access.log <log_format_name>;
+error_log  /var/log/nginx/error.log debug;
+
+# It is possible to disable log on a specific location 
+Example:
+	location /secure {
+		access_log /var/log/nginx/secure.access.log;
+	}
+	
+# It is possible specify to log a specific location in a dedicated log file
+Example:
+	location /no_log {
+		access_log off;
+	}
+
+
+####################################
+############# Variables ############
+####################################
+# Set directive is used to assign variable in NGINX.
+# The value can be: String, Integer or boolean
+
+set $a "hello world"; 
+
+Few Important inbuilt variables
+	$args 						--> List of arguments on the request line.
+	$arg_<parameter_URL_GET>	--> Value of the <parameter_URL> passed as a GET URL
+ 	$body_bytes_sent 			--> Number of bytes sent to the client.
+ 	$bytes_received 			--> Number of bytes received from a client
+	$connection_requests 		--> Current number of requests made via connection.
+ 	$date_local 				--> Current time in the local time zone.
+ 	$hostname 					--> Host name
+	$host						--> Host, IP or domain setted in server_name
+ 	$nginx_version 				--> Shows the nginx version.
+	$uri						--> URL invoked
+	
+# Set variable conditionally, with an IF
+Example:
+
+	set $weekend 'No';
+
+	if( $date_local ~ 'Saturday|Sunday' ) {
+		set $weekend 'Yes';
+	}
+
+	
+### HEADER FIELDS ###
+Retrieve header field: If I pass "Foo" in a response header i can see it as $sent_http_foo:
+I can rewrite with another field,
+Example: add_header "Foo-Header-Value" "$sent_http_foo";
+
+To read or set individual headers, use:
+client		--> nginx		==> (read) $http_name
+ngnix		--> upstream	==>	(write) proxy_set_header
+upstream	--> nginx		==>	(read) $upstream_http_name
+nginx		--> client		==>	(read) $sent_http_name, (write) add_header
+
+
+####################################
+############# Directive ############
+####################################
+try_files: The try_files directive can be used to check whether the specified file or directory exists.
+NGINX makes an internal redirect if it does, or returns a specified status code if it doesn’t.
+
+
+####### LOCATION #######
+Location Context: Location blocks live within server blocks (or other location blocks) and are used to decide how to process the request URI.
+location_match: Defines what Nginx should check the request URI against.
+The modifiers below will cause the associated location block to be interpreted as follows:
+	
+	=: 			exactly matches the location given.
+	^~: 		preferential Prefix, like "none" (prefix), only more important than a regular expression matching.
+ 	~*: 		case-insensitive regular expression match.
+	~: 			case-sensitive regular expression match.
+	(none): 	Prefix, if no modifiers are present, the location is interpreted as a prefix match
+	
+Priority of Modifiers	
+	Exact Match = URI
+	Preferential Prefix Match ^~ URI
+	REGEX Match. ~* URI
+	
+Syntax:	
+location optional_modifier location_match {}
+
+Example:
+	location /greet {
+		return 200 "Hello from Nginx '/greet' location - PREFIX MATH.";
+	}
+	
+	location ~ /greet[0-9] {
+		return 200 "Hello from Nginx '/greet' location - SENSITIVE_CASE REGEX MATH. ";
+	}
+	
+	location ~* /greet[0-9] {
+		return 200 "Hello from Nginx '/greet' location - INSENSITIVE_CASE REGEX MATH. ";
+	}
+	
+####### NAMED LOCATION #######
+# location created by assigning a name to a location context and using a directive such as try to invoke it.
+
+Example:
+
+	location @greet {
+		return 200 "Hello User";
+	}
+
+	
+####### RETURN (redirect) #######
+# Return Directive - Return is the simpler directive to use compared to NGINX rewrite.
+# Return must be enclosed within a server or location block which defines which URLs should be rewritten.
+# Tell to the client to invoke the a new request with the defined URL (redirect).
+
+Example:
+
+	server {
+		listen 80;
+		server_name www.old-website.com;
+		return 301 $scheme://www.new-website.com$request_uri;
+	}
+
+# Conditional Return
+# If condition on a parameter value of a URL
+
+Example:
+
+	if( $arg_apikey != 1234 ) {
+		return 401 "Incorrect API Key";
+	}
+
+
+####### REWRITE #######
+# Rewrite directive does not send a redirect to the client but it is executed internally, the nginx re-elaborate the new request. 
+# The browser/client continue to point to the original URL.
+# This directive needs to be in a location or server block in order to rewrite the URL.
+rewrite regex URL [flag];
+
+Example:
+
+	server {
+		rewrite ^/user/(\w+) /greet/$1 last;
+		
+		location /greet {
+			return 200 "Hello User";
+		}
+	}
+
+# "last" flag tell to nginx don't allow other rewrite to the URL result
+# That in case of multiple rewrite that can match the result url and rewrite again.
+
+
+
+####### TRY_FILES #######
+# It allows to check for a resource to respond with in any number of location relative to the root directory 
+# and a final argument that result in a rewrite and re-evaluation as rewrite directive.
+# It can be used in server or location context.
+try_files path1 path2 final;
+
+Example (the last path is a rewrite):
+
+	try_files $uri /greet /friendly_404
+
+	location /friendly_404 {
+		return 404 "Sorry, that file could not be found";
+	}
+
+
+Example (the last named location is not a rewrite):
+
+	try_files $uri /greet @friendly_404
+
+	location @friendly_404 {
+		return 404 "Sorry, that file could not be found";
+	}
+
+
+#### REVERSE PROXY ####
+proxy_pass: exec a proxy of another uri
+
+Example:
+
+	server {
+		listen 80;
+		server_name <IP Of Machine>;
+	 
+		location / {
+			proxy_pass http://<IP domain of another Application Server>;
+		}
+		
+		location ~\.php  {
+		   proxy_pass http://<IP domain of PHP Application Server>;
+		}
+	}
+
+#### PROXY HEADER - X-Real-IP ####
+proxy_set_header: set a header property for the proxy
+
+# The server receive the client IP Address and not only the reverse proxy IP
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+
+#### Hide nginx server version ######
+To hide version in response of the nginx server set the directive "server_tokens off;" on http context.
+
+###################################################
+#############   Buffers & Timeouts     ############
+###################################################
+Exaple of Setting Buffers and Timeout
+
+http {
+  include mime.types;
+
+  # Buffer size for POST submissions
+  client_body_buffer_size 10K;
+  client_max_body_size 8m;
+
+  # Buffer size for Headers
+  client_header_buffer_size 1k;
+
+  # Max time to receive client headers/body
+  client_body_timeout 12;
+  client_header_timeout 12;
+
+  # Max time to keep a connection open for
+  keepalive_timeout 15;
+
+  # Max time for the client accept/receive a response
+  send_timeout 10;
+
+  # Skip buffering for static files
+  sendfile on;
+
+  # Optimise sendfile packets
+  tcp_nopush on;
+}
+
+
+###############################################
+#############   Adding Modules     ############
+###############################################
+# To include a module use the directive "load_module" with the path of the module.
+Example:
+
+load_module modules/ngx_http_image_filter_module.so;
+
+http {
+	server {
+		location ~ \.(png) {
+			image_filter rotate 180;
+		}
+	}
+}
+
+# If the module is included with the nginx it is possible configure and make the install by the nginx source code.
+# download the nginx source code
+# If there is a nginx in running, you can see the current configuration by executin the command "nginx -V"
+# see the module to add from the list of the module than can you see by the command "./configure -help"
+# Execute the command ./configure with the parameters of the modules to include
+# Execute the command "make install"
+# Load the module in the nginx.conf and Stant the Nginx
+
+
+####################################
+#############   PHP     ############
+####################################
+# Nginx use external process to response a dynammic content compiled server side. It comunicate with that process by FastCGI, a binary protocol
+# To compile a PHP page need to install a PHP-FPM lib.
+Example: 
+
+	location ~\.php$ {
+		# Pass php requests to the php-fpm service (fastcgi)
+		include fastcgi.conf;
+		fastcgi_pass unix:/run/php/php7.1-fpm.sock;
+	}
+
+
+####################################
+#############   SSL     ############
+####################################
+
+Create SSL Certificate
+>> openssl req -x509 -days 100 -nodes -newkey rsa:2048 -keyout /etc/nginx/ssl/self.key -out /etc/nginx/ssl/self.cert
+
+To enable SSL in nginx.conf add ssl key after the listen port
+To enable HTTP2 add key http2 in the listen field
+Example:
+
+	server {
+		listen 443 ssl http2;
+		ssl_certificate /etc/nginx/ssl/self.cert;
+		ssl_certificate_key /etc/nginx/ssl/self.key
+	}
+
+With The nbew Version of NGINX the HTTP2 version is enabled with the directyive "http2 on;"
+Example:
+
+	server {
+		listen 443 ssl;
+		http2 on;
+		ssl_certificate /etc/nginx/ssl/self.cert;
+		ssl_certificate_key /etc/nginx/ssl/self.key
+	}
+
+
+##### HTTP to HTTPS by upstream #####
+Example:
+	upstream backend {
+		server backend.com:443;
+	}
+	
+	server {
+		proxy_pass backend;
+		proxy_ssl  on;
+		proxy_ssl_certificate         /etc/ssl/certs/backend.crt;
+        proxy_ssl_certificate_key     /etc/ssl/certs/backend.key;
+        proxy_ssl_protocols           TLSv1 TLSv1.1 TLSv1.2;
+        proxy_ssl_ciphers             HIGH:!aNULL:!MD5;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/trusted_ca_cert.crt;
+        proxy_ssl_verify        on;
+        proxy_ssl_verify_depth  2;
+        proxy_ssl_session_reuse on;
+	}
+	
+##### Redirect HTTP to HTTPS on the same nginx #####
+
+  # Redirect all traffic to HTTPS
+  server {
+    listen 80;
+    server_name <server_name>;
+    return 301 https://$host$request_uri;
+  }
+  
+##### Example SSL Directive  #####
+
+   # Disable old SSL protocol
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+    # Optimise cipher suits
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDH+AESGCM:ECDH+AES256:ECDH+AES128:DH+3DES:!ADH:!AECDH:!MD5;
+
+    # Enable DH Params
+    ssl_dhparam /etc/nginx/ssl/dhparam.pem;
+
+    # Enable HSTS
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # SSL sessions
+    ssl_session_cache shared:SSL:40m;
+    ssl_session_timeout 4h;
+    ssl_session_tickets on;
+
+
+######################################
+#########    Basic Auth       ########
+######################################
+
+# install tool to generate a password file ".htpasswd"
+>> apt-get install apache2-utils
+
+# generate password file (for a specific user) 
+>> htpasswd -c /etc/nginx/.htpasswd <username>
+
+# add location for basic auth access grant on that file
+Example:
+    location / {
+      auth_basic "Secure Area";
+      auth_basic_user_file /etc/nginx/.htpasswd;
+      try_files $uri $uri/ =404;
+    }
+
+
+######################################
+#########    Load balancer    ########
+######################################
+
+# Specify upstream with all server to proxy as load balancer
+
+upstream app_server {
+	server <ip_address_server_1>:<port>;
+	server <ip_address_server_2>:<port>;
+	server <ip_address_server_3>:<port>;
+}
+
+# Use the upstream i a location
+proxy_pass http://app_server;
+
+# Advanced field to manage Passive Health-Check
+fail_timeout: time during which a number of failed attemps must happen for the server to be marked unavailable, and also the time to mark unavailable the server (default 10s)
+max_fails: num of failed attempts during the fail_timeout period for the server to be maker unaivable (default 1)
+
+Example: 
+
+	upstream app_server {
+		server <ip_address_server_1>:<port> max_fails=5 fail_timeout=30s;
+		server <ip_address_server_2>:<port>;
+		server <ip_address_server_3>:<port>;
+	}
+
+
+# ACTIVE Health-Check is possible for NGINX Plus (Commercial)
+# use in the location info for the heath-check
+Example:
+
+location / {
+	proxy_pass http://backend;
+	health_check uri=/some/path port=8080 interval=10 fails=2 passess=2;
+}
+
+
+# Load Balancer "sticky Session" -> ip_hash , use the samy server for the same IP address client
+upstream app_server {
+	ip_hash;
+	server <ip_address_server_1>:<port>;
+	server <ip_address_server_2>:<port>;
+	server <ip_address_server_3>:<port>;
+}
+
+
+# Load Balancer distribuite "by active connection" -> ip_hash , use the samy server for the same IP address client
+upstream app_server {
+	least_conn;
+	server <ip_address_server_1>:<port>;
+	server <ip_address_server_2>:<port>;
+	server <ip_address_server_3>:<port>;
+}
+
+
+###############################
+#########    Cache     ########
+###############################
+
+# To create a cache in "/var/cache/nginx/oauth" path with this name "token_responses" use this directive
+proxy_cache_path /var/cache/nginx/oauth levels=1 keys_zone=token_responses:1m max_size=10m;
+
+# To use a cache (ex: token_responses) in a location by a key
+proxy_cache           token_responses; # Enable caching of token introspection responses
+proxy_cache_key       $access_token;   # Cache the response for each unique access token
+proxy_cache_lock      on;              # Don't allow simultaneous requests for same token
+proxy_cache_valid     200 10s;         # How long to use cached introspection responses
+proxy_cache_use_stale error timeout;   # Use old responses if we cannot reach the server
+proxy_ignore_headers  Cache-Control Expires Set-Cookie; # Cache even when receiving these
+
+
+# Cache-Control: define how to handler the cache both in the browser and server
+
+Cache-Control: max-age=120;	# The reponse is valid for 120 sec, after which the browser ha to request a newer version
+Cache-Control: no-chache;	# Specifuy that a Browser may cache a response (No cache used)
+Cache-Control: no-store; 	# Browser aren't allowed to cache a response. user for sensitive data
+Cache-Control: public; 		# Specify that the response can be cached by any cache
+Cache-Control: private;		# Specify that the response can be cached, but only on a client device.
+
+Example:
+
+	location ~ \.(png) {
+		add_header Cache-Control no-store;
+	}
+
+# The header If-Modified-Sinse indicates the time for which a braowser first donload ed a resource from the server
+# If the status of a particular resource is 304 = Not Modified, this means that the file has not changed and there is no need to download it again.
+
+
+#########################################
+#########    Headers & Expires   ########
+#########################################
+# We ca nadd header information to comunicate which Cache and Expires logic execute browser side
+
+Example:
+
+	location ~* \.(css|js|jpg|png)$ {
+		access_log off;
+		add_header Cache-Control public;	# set the resource as public, The browser can cache it
+		add_header Pragma public;			# old version to config public resource
+		add_header Vary Accept-Encoding;	# specify that vary based on content of encoding
+		expires 1M;							# Expires after 1 month.
+    }
+	
+	
+####################################
+#########    Rate Limit     ########
+####################################
+# Rate limit is used to prevent Dos attack. It uses leaky bucket algorithm.
+# The limit_req_zone directive is used to create a ddos_limit zone where all the data on requests from every unique IP will be stored.
+
+# On http context I can define a limit request zone
+# The size of the zone is determined by the 10m parameter. 
+# It means that 10 megabytes of memory will be used for storing the request data.
+limit_req_zone $request_uri zone=test_zone:10m rate=60r/s; 				# limit for each URL
+limit_req_zone $binary_remote_addr zone=test_zone:10m rate=60r/s;		# limit for each client IP address
+
+
+# On location I can use a defined limit request zone
+limit_req zone=test_zone;
+
+# "burst" specify the number of request that are allowed to exceed the limit. 
+# It use a queue and introduce a delay instead reject the request out of the rate limit.
+limit_req zone=test_zone burst=5;
+
+# "nodelay" parameter ensures that requests that exceed the limit are immediately rejected
+limit_req zone=test_zone burst=5 nodelay;
+
+# Limit_rate by bandwidth
+location /download/ {
+	limit_rate 50k;
+}
+
+# Limit_rate by bandwidth per connection
+# For example, you can allow each client IP address to open no more than 10 connections to the /store area of your website
+limit_conn_zone $binary_remote_address zone=conn_limit_per_ip:10m;
+
+location /download/ {
+	limit_conn conn_limit_per_ip 10;
+	limit_rate 50k;
+}
+
+# It is possible apply limit_rate after the first defined size downloaded, Example, aply the limit_rate after used the first 30 mb;
+location /download/ {
+	limit_rate_after 30m;
+	limit_rate 50k;
+}
+
+
+
+# To test rate limit you can use siege tool
+apt-get install siege
+curl -Ik URL
+
+#Use siege to invoke 2 request from 5 client
+siege -v -r 2 -c 5 url 
+
+
+
+######################################
+#########    Access Control   ########
+######################################
+
+# Allow and Restrict IP, Allow a particular IP and reject others IP
+location / {
+	allow <ip_address_allow>;
+	deny all;
+}
+
+# To allow multiple IP Address, Create a file "whitelistip" in /etc/nginx with all ip to allow and include the file
+location / {
+	include /etc/nginx/whitelistip;
+	deny all;
+}
+
+Content fo the file /etc/nginx/whitelistip:
+allow 127.0.0.1;
+allow 190.10.10.0/24;
+
+
+# Deny an IP address or subnet IP, Use in a location
+location / {
+    deny <ip_address_deny>;
+    # ...
+}
+
+# Deny multiple IP, specifing all the ip or include a file white the deny directive inside.
+location / {
+    deny 123.123.123.3;
+    deny 123.123.125.5;
+    deny 123.123.128.0/28;
+    # ...
+}
+
+
+#########################################
+#########    gZIP Compression    ########
+#########################################
+# We can config the nginx to serve some resource as compressed format with gZIP
+
+Example:
+    gzip on;
+    gzip_disable "msie6";
+
+    gzip_comp_level 4;			#1-9, after 5 level the the effort result high based on the compression result.
+    gzip_min_length 1100;
+    gzip_buffers 16 8k;
+    gzip_proxied any;
+    gzip_types
+      text/plain
+      text/css
+      text/js
+      text/xml
+      text/javascript
+      application/javascript
+      application/json
+      application/xml
+      application/rss+xml
+      image/svg+xml;
