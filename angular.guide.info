@@ -4,6 +4,9 @@
 - Installare Angular Cli: npm install -g @angular/cli
   >>	ng -v
   >>	ng help
+  
+Docs and Repo GIT:
+https://github.com/angular/angular-cli
 
 - Creare un nuovo progetto Angular
   >> ng new <nomeprogetto>
