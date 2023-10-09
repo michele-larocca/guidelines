@@ -283,6 +283,9 @@ Utils Query:
 >> SELECT * FROM pg_catalog.pg_publication;
 >> select * from pg_catalog.pg_publication_tables;
 >> select pg_drop_replication_slot('dsotp_subscription');
+>> SELECT pg_create_physical_replication_slot('dsotp_subscription');
+>> select pg_terminate_backend(pid) from pg_stat_replication;
+
 
 ##################################
 ###### 	Pg System Catalog 	######
