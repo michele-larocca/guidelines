@@ -108,8 +108,20 @@ Finally the key generated is used for both side to crypt data.
 #############       HTTPS     ###############
 #############################################
 
-Create SSL Certificate
+# Create SSL Certificate
 >> openssl req -x509 -days 100 -nodes -newkey rsa:2048 -keyout <path_private_key>.key -out <path_certificate>.cert
 
-Show certificate detail info
+# Show certificate detail info
 >> openssl x509 -in <path_certificate>.cert -noout -text
+
+# Generate private key
+>> openssl genrsa -out client.key 2048
+
+# Generate CSR (Certificate signing request)
+>> openssl req -new -key client.key -out client.csr
+
+# Generate CSR (Certificate signing request) and key
+>> openssl req -new -newkey rsa:2048 -keyout <client>.key -out <client>.csr
+
+# Verify the CSR
+>> openssl req -text -noout -verify -in <client>.csr
