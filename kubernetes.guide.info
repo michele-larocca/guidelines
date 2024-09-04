@@ -101,7 +101,7 @@ Key Kubernetes Features
 >> curl -s http://[podID]
 
 >> kubectl exec [pod-name] -- curl -s http://podIP
->> kubectl exec[pod-name] -- printenv | grep SERVICE
+>> kubectl exec [pod-name] -- printenv | grep SERVICE
 
 
 # **********************************************************
@@ -165,6 +165,11 @@ Key Kubernetes Features
 # *************************
 # ***** Service Types *****
 # *************************
+
+# To show all information of one or more service k8s
+# You can filter by the option --selector
+>> kubectl get svc
+
 - ClusterIp - Expose the service on a cluster-internal IP (default)
 - NodePort - Expose the service on each Node's IP at a static port
 - LoadBalancer - Provision an external IP to act as a load balancer for the service
@@ -175,6 +180,7 @@ Key Kubernetes Features
 	--type=[NodePort | LoadBalancer | etc..]
 	--port=[external-port] --target-port=[container-port]
 	--name=[name-service]
+
 
 
 # *************************
@@ -227,6 +233,11 @@ Key Kubernetes Features
 >> kubectl create secret tls tls-secret 
 	--cert=path/to/tls.cert
 	--key=path/to/tls.key
+	
+# Create a secret to pull image from private docker registry
+>> kubectl create secret docker-registry <secret-name> \
+	--docker-server=<docker-server> --docker-username=<docker-user> \
+	--docker-password=<docker-password> --dry-run=client -o yaml
 	
 # Get secrets
 >> kubectl get secrets
@@ -371,3 +382,14 @@ Quando kube-proxy parte in "IPVS proxy mode" cerca se nel Nodo è disponibile un
 
 # Vedere se è installato l'addon kube-dns (DNS cluster offerto da k8s)
 >> kubectl get services kube-dns --namespace=kube-system -o wide
+
+
+
+# ***************************************
+# *************** Config ****************
+# ***************************************
+Visualizzare le config dei cluster gestiti da kubectl (presenti nel ~\.kube\config)
+>> kubectl config get-contexts
+
+Cambiare cluster su cui eseguire i conmandi
+>> kubectl config use-context  <context-name>
