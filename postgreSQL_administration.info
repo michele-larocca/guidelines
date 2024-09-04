@@ -4,7 +4,7 @@
 
 E' possibile inizializzare il postgres tramite uno dei seguenti 2 comandi.
 -D = si riferisce alla directory location dei dati
--W = e' possibile usare questa opzione per forzare il super user a chiedere la password prima di iniziolizzare il db
+-W = e' possibile usare questa opzione per forzare il super user a chiedere la password prima di inizializzare il db
 
 >> initdb -D /usr/local/pgsql/data
 >> pg_ctl -D /usr/local/pgsql/data initdb
@@ -494,3 +494,15 @@ If a column is added or dropped in primary, you have disable subscription, add/d
 Drop Publication or Subscription (Replication slots are automaticaly dropped)
 >> DROP SUBSCRIPTION mysub;
 >> DROp PUBLICATION mypub;
+
+
+###################################################
+##### pg_HBA.conf Host Basic Authentication #######
+###################################################
+Your change in HBA requires a reload of PostgreSQL
+
+Inside PostgreSQL node:
+>>  SELECT pg_reload_conf();
+
+You can do it from the command line too, using pg_ctl reload and other OS provided variants
+>> pg_ctl reload
